@@ -31,6 +31,7 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   private val value = new Text()
   private var fsin: FSDataInputStream = _
   private val buffer = new DataOutputBuffer()
+  private var keySet = scala.collection.mutable.Set[Long]()
   private val endTag = "\\.".getBytes()
 
   override def initialize(inputSplit: InputSplit, taskAttemptContext: TaskAttemptContext): Unit = {
@@ -60,9 +61,14 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   }
     val status = readUntilMatch(endTag, true)
     println(s"[Custom log] ${LocalDateTime.now() }    status: $status")
-    value.set(buffer.getData, 0, buffer.getLength)
-    println(s"[Custom log] ${LocalDateTime.now() }    setting key: ${fsin.getPos} with value length = ${buffer.getLength}")
-    key.set(fsin.getPos)
+    if (keySet.contains(fsin.getPos)) println(s"Trying to add an already added key: $key")
+    else
+    {
+      value.set(buffer.getData, 0, buffer.getLength)
+      println(s"[Custom log] ${LocalDateTime.now() }    setting key: ${fsin.getPos} with value length = ${buffer.getLength}")
+      key.set(fsin.getPos)
+      keySet+=fsin.getPos 
+    }
     buffer.reset()
     if (!status) {
       stillInChunk = false
@@ -79,7 +85,7 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   override def close(): Unit = fsin.close()
 
   private def readUntilMatch(matcher: Array[Byte], withinBlock: Boolean): Boolean = {
-    println("[Custom log] ${LocalDateTime.now() }  Inside readUntilMatch method")
+    println(s"[Custom log] ${LocalDateTime.now() }  Inside readUntilMatch method")
     var i = 0
     while (true) {
       val b = fsin.read()
