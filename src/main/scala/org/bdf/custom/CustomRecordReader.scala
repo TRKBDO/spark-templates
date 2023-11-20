@@ -31,7 +31,7 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   private val value = new Text()
   private var fsin: FSDataInputStream = _
   private val buffer = new DataOutputBuffer()
-  private var keySet = scala.collection.mutable.Set[Long]()
+  private var keySet = scala.collection.mutable.Set[Long](149L)
   private val endTag = "\\.".getBytes()
 
   override def initialize(inputSplit: InputSplit, taskAttemptContext: TaskAttemptContext): Unit = {
@@ -61,7 +61,8 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   }
     val status = readUntilMatch(endTag, true)
     println(s"[Custom log] ${LocalDateTime.now() }    status: $status")
-    if (keySet.contains(fsin.getPos)) println(s"Trying to add an already added key: $key")
+    println(s"[Custom log] ${LocalDateTime.now() } Current Key Set: $keySet")
+    if (keySet.contains(fsin.getPos)) println(s"[WARNING] Trying to add an already added key: ${fsin.getPos}")
     else
     {
       value.set(buffer.getData, 0, buffer.getLength)
