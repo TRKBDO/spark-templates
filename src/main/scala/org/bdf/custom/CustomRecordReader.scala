@@ -31,7 +31,7 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   private val value = new Text()
   private var fsin: FSDataInputStream = _
   private val buffer = new DataOutputBuffer()
-  private var keySet = scala.collection.mutable.Set[Long](149L)
+  private var keySet = scala.collection.mutable.Set[Long]()
   private val endTag = "\\.".getBytes()
 
   override def initialize(inputSplit: InputSplit, taskAttemptContext: TaskAttemptContext): Unit = {
