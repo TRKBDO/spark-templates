@@ -1,5 +1,6 @@
 package org.bdf.custom
 
+import java.time.LocalDateTime
 import org.apache.hadoop.mapreduce._
 import org.apache.hadoop.mapreduce.lib.input.FileInputFormat
 import org.apache.hadoop.io.{LongWritable, Text}
@@ -37,14 +38,14 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
     val conf = taskAttemptContext.getConfiguration
     val path = split.getPath
     val fs = path.getFileSystem(conf)
-    println("[Custom log]    Reader Initialize")
-    println(s"[Custom log]    FileSplit: $inputSplit")
-    println(s"[Custom log]    File path: $path")
+    println(s"[Custom log] ${LocalDateTime.now() }    Reader Initialize")
+    println(s"[Custom log] ${LocalDateTime.now() }   FileSplit: $inputSplit")
+    println(s"[Custom log] ${LocalDateTime.now() }    File path: $path")
     fsin = fs.open(path)
     val start = split.getStart
-    println(s"[Custom log]    file start: $start")
+    println(s"[Custom log] ${LocalDateTime.now()}    file start: $start")
     end = split.getStart + split.getLength
-    println(s"[Custom log]    file end: $end")
+    println(s"[Custom log] ${LocalDateTime.now()}    file end: $end")
     fsin.seek(start)
     if (start != 0) {
       readUntilMatch(endTag, false)
@@ -52,15 +53,15 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   }
 
   override def nextKeyValue(): Boolean = {
-    println("[Custom log]    Inside nextKeyValue method")
+    println(s"[Custom log] ${LocalDateTime.now() }   Inside nextKeyValue method")
     if (!stillInChunk) {
-      println(s"[Custom log]    stillInChunk=False")
+      println(s"[Custom log] ${LocalDateTime.now() }    stillInChunk=False")
       return false
   }
     val status = readUntilMatch(endTag, true)
-    println(s"[Custom log]    status: $status")
+    println(s"[Custom log] ${LocalDateTime.now() }    status: $status")
     value.set(buffer.getData, 0, buffer.getLength)
-    println(s"[Custom log]    setting key: ${fsin.getPos} with value length = ${buffer.getLength}")
+    println(s"[Custom log] ${LocalDateTime.now() }    setting key: ${fsin.getPos} with value length = ${buffer.getLength}")
     key.set(fsin.getPos)
     buffer.reset()
     if (!status) {
@@ -78,7 +79,7 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
   override def close(): Unit = fsin.close()
 
   private def readUntilMatch(matcher: Array[Byte], withinBlock: Boolean): Boolean = {
-    println("Inside readUntilMatch method")
+    println("[Custom log] ${LocalDateTime.now() }  Inside readUntilMatch method")
     var i = 0
     while (true) {
       val b = fsin.read()
@@ -87,13 +88,13 @@ class CustomRecordReader extends RecordReader[LongWritable, Text] {
       if (b == matcher(i)) {
         i += 1
         if (i >= matcher.length) {
-          println(s"[Custom log]    Reached b: $b")
-          println(s"[Custom log]    found pos: ${fsin.getPos}")
+          println(s"[Custom log] ${LocalDateTime.now() }     Reached b: $b")
+          println(s"[Custom log] ${LocalDateTime.now() }    found pos: ${fsin.getPos}")
           return fsin.getPos < end
         }
       } else i = 0
     }
-    println(s"[Custom log]    returned False inside readUntilMatch")
+    println(s"[Custom log] ${LocalDateTime.now() }    returned False inside readUntilMatch")
     false
   }
 }
@@ -106,14 +107,14 @@ object Main {
     val path = new Path("file:////workspaces/spark-templates/src/main/scala/org/bdf/custom/text.txt")
     val reader = new CustomRecordReader()
     val fileSplit = new FileSplit(path, 0, 400, Array.empty)
-    println(s"[Custom log]    [Custom log]    fileSplit: $fileSplit")
+    println(s"[Custom log] ${LocalDateTime.now() }     fileSplit: $fileSplit")
     val attemptId = new TaskAttemptID(new TaskID(new JobID(), TaskType.MAP, 0), 0)
     val hadoopAttemptContext = new TaskAttemptContextImpl(conf, attemptId)
     reader.initialize(fileSplit, hadoopAttemptContext)
     while (reader.nextKeyValue()) {
       val key = reader.getCurrentKey
       val value = reader.getCurrentValue
-      println(s"[Custom log]    $key: $value")
+      println(s"[Custom log] ${LocalDateTime.now() }    $key: $value")
     }
     reader.close()
   }
